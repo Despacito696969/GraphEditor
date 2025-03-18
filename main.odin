@@ -602,32 +602,64 @@ main :: proc() {
                break
             }
       }
+
+      BUTTON_SIZE :: 56
+
       {
          x := width - gui_offset + 10
-         if rl.GuiButton({x = x, y = 30, width = 64, height = 64}, "Add") {
-            mode = Mode_Add_Node{}
+         {
+            add_text: cstring = "Add"
+            if _, ok := mode.(Mode_Add_Node); ok {
+               add_text = "[Add]"
+            }
+            if rl.GuiButton({x = x, y = 30, width = BUTTON_SIZE, height = BUTTON_SIZE}, add_text) {
+               mode = Mode_Add_Node{}
+            }
+            x += BUTTON_SIZE + 10
          }
-         x += 64 + 10
-         if rl.GuiButton({x = x, y = 30, width = 64, height = 64}, "Delete") {
-            mode = Mode_Delete_Node{}
+
+         {
+            delete_text: cstring = "Delete"
+            if _, ok := mode.(Mode_Delete_Node); ok {
+               delete_text = "[Delete]"
+            }
+            if rl.GuiButton({x = x, y = 30, width = BUTTON_SIZE, height = BUTTON_SIZE}, delete_text) {
+               mode = Mode_Delete_Node{}
+            }
+            x += BUTTON_SIZE + 10
          }
-         x += 64 + 10
-         if rl.GuiButton({x = x, y = 30, width = 64, height = 64}, "Normal") {
-            mode = Mode_None{}
+
+         {
+            normal_text: cstring = "Normal"
+            if _, ok := mode.(Mode_None); ok {
+               normal_text = "[Normal]"
+            }
+            if rl.GuiButton({x = x, y = 30, width = BUTTON_SIZE, height = BUTTON_SIZE}, normal_text) {
+               mode = Mode_None{}
+            }
+            x += BUTTON_SIZE + 10
          }
-         x += 64 + 10
-         if rl.GuiButton({x = x, y = 30, width = 64, height = 64}, "Node\nStyles") {
-            style_editor_mode = .Node
+
+         {
+            node_text: cstring = "Node\nStyles" if style_editor_mode != .Node else "[Node]\n[Styles]"
+            if rl.GuiButton({x = x, y = 30, width = BUTTON_SIZE, height = BUTTON_SIZE}, node_text) {
+               style_editor_mode = .Node
+            }
+            x += BUTTON_SIZE + 10
          }
-         x += 64 + 10
-         if rl.GuiButton({x = x, y = 30, width = 64, height = 64}, "Edge\nStyles") {
-            style_editor_mode = .Edge
+
+         {
+            edge_text: cstring = "Edge\nStyles" if style_editor_mode != .Edge else "[Edge]\n[Styles]"
+            if rl.GuiButton({x = x, y = 30, width = BUTTON_SIZE, height = BUTTON_SIZE}, edge_text) {
+               style_editor_mode = .Edge
+            }
+            x += BUTTON_SIZE + 10
          }
       }
 
       switch style_editor_mode {
       case .Node:
-         y := cast(f32)30 + 64 + 10
+         y := cast(f32)30 + BUTTON_SIZE + 10
          x := width - 300
          {
             cur_style := get_node_style(node_style_editor_id)
@@ -642,19 +674,19 @@ main :: proc() {
             next_pressed := false
             delete_pressed := false
             new_pressed := false
-            if prev_style != nil && rl.GuiButton({x = x, y = y, width = 64, height = 64}, "Previous") {
+            if prev_style != nil && rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "Previous") {
                prev_pressed = true
             }
-            x += 64 + 10
-            if next_style != nil && rl.GuiButton({x = x, y = y, width = 64, height = 64}, "Next") {
+            x += BUTTON_SIZE + 10
+            if next_style != nil && rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "Next") {
                next_pressed = true
             }
-            x += 64 + 10
-            if cur_style.id != 0 && rl.GuiButton({x = x, y = y, width = 64, height = 64}, "Delete") {
+            x += BUTTON_SIZE + 10
+            if cur_style.id != 0 && rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "Delete") {
                delete_pressed = true
             }
-            x += 64 + 10
-            if rl.GuiButton({x = x, y = y, width = 64, height = 64}, "New") {
+            x += BUTTON_SIZE + 10
+            if rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "New") {
                new_pressed = true
             }
             if prev_pressed {
@@ -676,7 +708,7 @@ main :: proc() {
                append(&node_styles, new_style)
             }
          }
-         y += 64 + 10 
+         y += BUTTON_SIZE + 10 
          x = width - 300
          style := get_node_style(node_style_editor_id)
          name_rect := rl.Rectangle{x = cast(f32)x, y = cast(f32)y, width = 200, height = 40}
@@ -699,14 +731,43 @@ main :: proc() {
                cast(i32)len(style.style_name.value),
                true,
             )
-            outer_color_picker_rect := rl.Rectangle{x = x, y = y, width = 200, height = 200}
-            y += outer_color_picker_rect.height
-            y += 10
-            rl.GuiColorPicker(outer_color_picker_rect, "", &style.outer_color)
+            {
+               outer_color_picker_rect := rl.Rectangle{x = x, y = y, width = 200, height = 200}
+               y += outer_color_picker_rect.height
+               y += 10
+               rl.GuiColorPicker(outer_color_picker_rect, "", &style.outer_color)
+            }
+
+            {
+               slider_rect := rl.Rectangle{x = x, y = y, width = 200, height = 30}
+               y += slider_rect.height
+               y += 10
+               rt.DEFAULT_TEMP_ALLOCATOR_TEMP_GUARD()
+               cstr_val := fmt.ctprint(style.radius)
+               rl.GuiSlider(slider_rect, "radius", cstr_val, &style.radius, 0, 150)
+               style.radius = math.round(style.radius)
+            }
+
+            {
+               slider_rect := rl.Rectangle{x = x, y = y, width = 200, height = 30}
+               y += slider_rect.height
+               y += 10
+               rt.DEFAULT_TEMP_ALLOCATOR_TEMP_GUARD()
+               cstr_val := fmt.ctprint(style.border)
+               rl.GuiSlider(slider_rect, "border", cstr_val, &style.border, 0, 30)
+               style.border = math.round(style.border)
+            }
+
+            {
+               inner_color_picker_rect := rl.Rectangle{x = x, y = y, width = 200, height = 200}
+               y += inner_color_picker_rect.height
+               y += 10
+               rl.GuiColorPicker(inner_color_picker_rect, "", &style.inner_color)
+            }
 
          }
       case .Edge:
-         y := cast(f32)30 + 64 + 10
+         y := cast(f32)30 + BUTTON_SIZE + 10
          x := width - 300
          {
             cur_style := get_edge_style(edge_style_editor_id)
@@ -721,19 +782,19 @@ main :: proc() {
             next_pressed := false
             delete_pressed := false
             new_pressed := false
-            if prev_style != nil && rl.GuiButton({x = x, y = y, width = 64, height = 64}, "Previous") {
+            if prev_style != nil && rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "Previous") {
                prev_pressed = true
             }
-            x += 64 + 10
-            if next_style != nil && rl.GuiButton({x = x, y = y, width = 64, height = 64}, "Next") {
+            x += BUTTON_SIZE + 10
+            if next_style != nil && rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "Next") {
                next_pressed = true
             }
-            x += 64 + 10
-            if cur_style.id != 0 && rl.GuiButton({x = x, y = y, width = 64, height = 64}, "Delete") {
+            x += BUTTON_SIZE + 10
+            if cur_style.id != 0 && rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "Delete") {
                delete_pressed = true
             }
-            x += 64 + 10
-            if rl.GuiButton({x = x, y = y, width = 64, height = 64}, "New") {
+            x += BUTTON_SIZE + 10
+            if rl.GuiButton({x = x, y = y, width = BUTTON_SIZE, height = BUTTON_SIZE}, "New") {
                new_pressed = true
             }
             if prev_pressed {
@@ -755,7 +816,7 @@ main :: proc() {
                append(&edge_styles, new_style)
             }
          }
-         y += 64 + 10 
+         y += BUTTON_SIZE + 10 
          x = width - 300
          style := get_edge_style(edge_style_editor_id)
          name_rect := rl.Rectangle{x = cast(f32)x, y = cast(f32)y, width = 200, height = 40}
